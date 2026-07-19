@@ -150,7 +150,8 @@ demo = gr.Interface(
     description=(
         "Get AI-powered technology stack recommendations "
         "based on your project requirements."
-    )
+    ),
+    allow_flagging="never"
 )
 
 # -------------------------------------
