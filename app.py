@@ -1,11 +1,20 @@
 import gradio as gr
+import pandas as pd
 import pickle
-import numpy as np
 
+# -------------------------------------
 # Load model and encoders
-model = pickle.load(open("model.pkl", "rb"))
-encoders = pickle.load(open("encoders.pkl", "rb"))
+# -------------------------------------
 
+with open("model.pkl", "rb") as f:
+    model = pickle.load(f)
+
+with open("encoders.pkl", "rb") as f:
+    encoders = pickle.load(f)
+
+# -------------------------------------
+# Prediction function
+# -------------------------------------
 
 def recommend_stack(
     project_type,
@@ -15,75 +24,138 @@ def recommend_stack(
     expected_users,
     deployment_target,
     database_preference,
-    experience,
+    experience
 ):
-    pt = encoders["project_type"].transform([project_type])[0]
-    cp = encoders["cloud_provider"].transform([cloud_provider])[0]
-    bd = encoders["budget"].transform([budget])[0]
-    eu = encoders["expected_users"].transform([expected_users])[0]
-    dt = encoders["deployment_target"].transform([deployment_target])[0]
-    db = encoders["database_preference"].transform([database_preference])[0]
-    ex = encoders["experience"].transform([experience])[0]
 
-    input_data = np.array(
-        [[
-            pt,
-            team_size,
-            cp,
-            bd,
-            eu,
-            dt,
-            db,
-            ex
-        ]]
-    )
+    sample = pd.DataFrame([{
+        "project_type": project_type,
+        "team_size": team_size,
+        "cloud_provider": cloud_provider,
+        "budget": budget,
+        "expected_users": expected_users,
+        "deployment_target": deployment_target,
+        "database_preference": database_preference,
+        "experience": experience
+    }])
 
-    pred = model.predict(input_data)[0]
+    categorical_columns = [
+        "project_type",
+        "cloud_provider",
+        "budget",
+        "expected_users",
+        "deployment_target",
+        "database_preference",
+        "experience"
+    ]
 
-    stack = encoders["stack"].inverse_transform([pred])[0]
+    for col in categorical_columns:
+        sample[col] = encoders[col].transform(sample[col])
 
-    return f"🔧 Recommended Tech Stack: {stack}"
+    prediction = model.predict(sample)
 
+    stack = encoders["stack"].inverse_transform(prediction)[0]
+
+    return f"✅ Recommended Stack: {stack}"
+
+# -------------------------------------
+# Gradio UI
+# -------------------------------------
 
 demo = gr.Interface(
     fn=recommend_stack,
     inputs=[
         gr.Dropdown(
-            ["Web App", "API", "ML App", "Real-time App", "Mobile Backend"],
-            label="Project Type",
+            choices=[
+                "Web App",
+                "API",
+                "ML App",
+                "Real-time App",
+                "Mobile Backend"
+            ],
+            label="Project Type"
         ),
-        gr.Slider(1, 20, step=1, label="Team Size"),
+
+        gr.Slider(
+            minimum=1,
+            maximum=20,
+            value=5,
+            step=1,
+            label="Team Size"
+        ),
+
         gr.Dropdown(
-            ["AWS", "Azure", "GCP", "On-Prem"],
-            label="Cloud Provider",
+            choices=[
+                "AWS",
+                "Azure",
+                "GCP",
+                "On-Prem"
+            ],
+            label="Cloud Provider"
         ),
+
         gr.Dropdown(
-            ["Low", "Medium", "High", "Enterprise"],
-            label="Budget",
+            choices=[
+                "Low",
+                "Medium",
+                "High",
+                "Enterprise"
+            ],
+            label="Budget"
         ),
+
         gr.Dropdown(
-            ["Small", "Medium", "Large", "Massive"],
-            label="Expected Users",
+            choices=[
+                "Small",
+                "Medium",
+                "Large",
+                "Massive"
+            ],
+            label="Expected Users"
         ),
+
         gr.Dropdown(
-            ["Docker", "Kubernetes", "VM", "Serverless"],
-            label="Deployment Target",
+            choices=[
+                "Docker",
+                "Kubernetes",
+                "VM",
+                "Serverless"
+            ],
+            label="Deployment Target"
         ),
+
         gr.Dropdown(
-            ["SQLite", "PostgreSQL", "MongoDB", "Redis"],
-            label="Database Preference",
+            choices=[
+                "SQLite",
+                "PostgreSQL",
+                "MongoDB",
+                "Redis"
+            ],
+            label="Database Preference"
         ),
+
         gr.Dropdown(
-            ["Beginner", "Intermediate", "Expert"],
-            label="Experience Level",
-        ),
+            choices=[
+                "Beginner",
+                "Intermediate",
+                "Expert"
+            ],
+            label="Team Experience"
+        )
     ],
+
     outputs="text",
+
     title="Tech Stack Advisor",
-    description="Get an AI-generated technology stack recommendation.",
+
+    description=(
+        "Get AI-powered technology stack recommendations "
+        "based on your project requirements."
+    )
 )
 
-demo.launch(
-    server_name="0.0.0.0",
-    server_port=7860,
-)
+# -------------------------------------
+# Run app
+# -------------------------------------
+
+if __name__ == "__main__":
+    demo.launch()
