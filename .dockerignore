@@ -7,13 +7,10 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.pyc
-*.pyo
-*.pyd
 *.pdb
 *.egg-info/
 
-# Jupyter Notebook checkpoints (if applicable)
+# Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
 # MacOS metadata
@@ -27,12 +24,19 @@ __pycache__/
 .git
 .gitignore
 
-# Test folders or data artifacts (if any)
+# Test files and artifacts
+test_*.py
 *.log
 *.csv
 *.tsv
 *.xlsx
+.github/
+flagged/
 
 # Docker-specific
 Dockerfile.*
 .dockerignore
+LICENSE
+README.md
+train.py
+requirements-lock.txt
